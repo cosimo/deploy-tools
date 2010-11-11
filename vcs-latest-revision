@@ -1,0 +1,42 @@
+#!/usr/bin/env perl
+#
+# Extracts last revision from a remote repository,
+# being that either svn or git.
+#
+# Cosimo, 11/Nov/2010
+#
+
+use strict;
+use warnings;
+
+my $cmd;
+my $repo_url = $ARGV[0];
+
+if (! $repo_url) {
+    die <<USAGE;
+Usage:
+    $0 <repository-url>
+
+Example:
+    $0 http://my.svn.server/svn/project/trunk
+    $0 user\@my.git.server:/dir/project.git
+USAGE
+
+}
+
+if ($repo_url =~ m{/svn/}) {
+    $cmd = qq{svn log --xml -l 1 '$repo_url' | grep revision | cut -d'"' -f 2};
+}
+
+elsif ($repo_url =~ m{\.git$}) {
+    $cmd = qq{git clone -q --depth 1 $repo_url /var/tmp/repo.$$ ; }
+        . qq{cd /var/tmp/repo.$$ ; git rev-parse HEAD; }
+        . qq{cd - >/dev/null ; rm -rf /var/tmp/repo.$$ 2>/dev/null}
+        ;
+}
+
+my $status = system($cmd);
+$status >>= 8;
+
+exit $status;
+

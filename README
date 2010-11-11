@@ -1,0 +1,36 @@
+deploy-tools
+============
+
+Assorted deployment tools that I'm using.
+Description follows.
+
+* ccrb-build-status
+
+  Can be used to get the list of most recent builds
+  from a CC.rb installation for a given project.
+
+  Useful because then you can either grep for a given revision,
+  or get the latest 3/5/n, etc... Example:
+
+  # Get latest revision
+  ccrb-build-status \
+      --server http://my.dev.server/ccrb \
+      --project myproj | head -1
+
+  # Get most recent failed revision
+  ccrb-build-status \
+      --server http://my.dev.server/ccrb \
+      --project myproj | grep failed | head -1
+
+
+* vcs-latest-revision
+
+  Gets you the latest revision from a *remote* svn or git
+  repository. If you know a nice way to do this with git
+  that doesn't involve cloning, let me know... :)
+
+  Examples:
+
+    vcs-latest-revision http://my.dev.server/svn/myproject/trunk
+    vcs-latest-revision user@my.git.server:/var/lib/git/myproject.git
+

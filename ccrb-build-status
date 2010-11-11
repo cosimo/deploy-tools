@@ -1,0 +1,88 @@
+#!/usr/bin/env perl
+#
+# Retrieve the list of last builds from a CC.rb server
+#
+# Cosimo, 10/Nov/2010
+#
+
+use strict;
+use warnings;
+
+use Getopt::Long ();
+use JSON::XS ();
+use Scrappy ();
+
+sub find_committer {
+    my ($commit_message) = @_;
+
+    $commit_message = lc $commit_message;
+    my $committer = "";
+
+    if ($commit_message =~ m{this is the first}i) {
+        $committer = '(first)';
+    }
+    elsif ($commit_message =~ m{manually requested}i) {
+        $committer = '(manual)';
+    }
+    elsif ($commit_message =~ m{committed by (\S+)}i) {
+        $committer = $1;
+    }
+
+    return $committer;
+}
+
+Getopt::Long::GetOptions(
+    'server:s'  => \my $server,
+    'project:s' => \my $project,
+);
+
+if (! $server || ! $project) {
+    die <<USAGE;
+Usage:
+    $0 --server <ccrb-server-url> --project <project-name>
+
+Example:
+    $0 --server http://my.dev.server/ccrb-installation --project myawesomeprj
+
+USAGE
+}
+
+my $url = "$server/builds/$project";
+my $skrat = Scrappy->new();
+
+# Find all <a> elements children of nodes with id 'build-link'
+# within the main '#builds_list' div
+my @builds;
+$skrat->crawl($url, {
+    '#builds_list .build-link a' => sub { push @builds => shift }
+});
+
+# Print out info about all the builds
+for my $node (@builds) {
+
+    next unless $node;
+
+    my $href = $node->href;
+
+    # Last portion of URL is the revision
+    # without useless text around it
+    my ($revision) = $href =~ m{/([^/]+)$};
+
+    # Status is just the <a> class name, success, failed, or incomplete
+    my $status = $node->class;
+
+    my $committer = find_committer($node->title);
+
+    print join("\t", $revision, $status, $committer, $node->href), "\n";
+
+    #$node = {
+    #    build => $revision,
+    #    status => $status,
+    #    link => $href,
+    #};
+
+}
+
+#my $json = JSON::XS->new()->pretty()->indent(4);
+#print $json->encode({ builds => \@builds });
+
