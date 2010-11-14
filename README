@@ -24,6 +24,21 @@ Description follows.
       --project myproj | grep failed | head -1
 
 
+* deployer
+
+  An IRC bot that uses Bot::BasicBot and Bot::BasicBot::Pluggable
+  It will detect new builds for your projects, and answer queries
+  about builds and projects.
+
+  Send "help deployer" to the bot to know more about it.
+
+  "deployer" is the script to be run
+
+  "Deployer.pm" is the Bot::BasicBot::Pluggable module
+
+  "deployer.conf" is the configuration file that contains info about
+     your projects, source code repositories and continuous integration servers.
+
 * hudson-build-status
 
   Mostly the same as ccrb-build-status, just for Hudson

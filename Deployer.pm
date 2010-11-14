@@ -13,7 +13,11 @@ use Term::ANSIColor qw(:constants);
 use YAML ();
 
 our $VERSION = '0.04';
+
+# Build updates will be automatically detected
+# and broadcast on this channel
 our $BUILD_UPDATES_CHANNEL = '#build-updates';
+
 our $HELPER_TOOLS_PATH = '.';
 
 sub help {
