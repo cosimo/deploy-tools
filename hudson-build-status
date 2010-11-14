@@ -1,0 +1,76 @@
+#!/usr/bin/env perl
+#
+# Retrieve the list of last builds from a Hudson server
+#
+# Cosimo, 14/Nov/2010
+#
+
+use strict;
+use warnings;
+
+use Getopt::Long ();
+use XML::TreePP ();
+
+# Not functional yet
+sub find_committer {
+    my ($commit_message) = @_;
+    my $committer = "";
+    return $committer;
+}
+
+Getopt::Long::GetOptions(
+    'server:s'  => \my $server,
+    'project:s' => \my $project,
+    'username:s' => \my $username,
+    'password:s' => \my $password,
+);
+
+if (! $server || ! $project) {
+    die "Usage: $0 --server <hudson-server-url> --project <project-name> [--username <http_username>] [--password <http_password>]\n"
+        . "Example: $0 --server http://my.dev.server/hudson --project myawesomeprj\n";
+}
+
+my @builds;
+my $url = "$server/job/$project";
+my $tpp = XML::TreePP->new();
+my ($rss, $xml, $status_code) = $tpp->parsehttp(GET => $url);
+
+if (! $rss) {
+    die <<ERROR
+Can't retrieve hudson builds RSS for project $project
+at $url
+
+HTTP status code: $status_code
+ERROR
+
+}
+
+if (! exists $rss->{feed}
+    || ! exists $rss->{feed}->{entry}
+    || ref $rss->{feed}->{entry} ne 'ARRAY') {
+    die "The document at $url doesn't seem to contain RSS feed entries\n";
+}
+
+@builds = @{ $rss->{feed}->{entry} };
+
+# Print out info about all the displayed builds
+for my $entry (@builds) {
+
+    next unless $entry;
+
+    my $href = $entry->{'link'}->{'-href'};
+    my $title = $entry->{'title'};
+
+    my ($build_number) = $title =~ m{\#(\d+)};
+    my $revision = $build_number; # FIXME
+
+    my ($status) = $title =~ m{(SUCCESS|FAIL(?:\S*))};
+    $status = lc $status;
+
+    # Committer is not included in the hudson message here
+    my $committer = find_committer($title);
+
+    print join("\t", $revision, $status, $committer, $href), "\n";
+
+}
+

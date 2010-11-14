@@ -7,7 +7,8 @@ Description follows.
 * ccrb-build-status
 
   Can be used to get the list of most recent builds
-  from a CC.rb installation for a given project.
+  from a CC.rb (http://cruisecontrolrb.thoughtworks.com/)
+  installation for a given project.
 
   Useful because then you can either grep for a given revision,
   or get the latest 3/5/n, etc... Example:
@@ -22,6 +23,11 @@ Description follows.
       --server http://my.dev.server/ccrb \
       --project myproj | grep failed | head -1
 
+
+* hudson-build-status
+
+  Mostly the same as ccrb-build-status, just for Hudson
+  (https://hudson.dev.java.net)
 
 * vcs-latest-revision
 
