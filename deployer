@@ -1,0 +1,27 @@
+#!/usr/bin/env perl
+
+#eval 'exec /opt/local/bin/perl  -S $0 ${1+"$@"}'
+#    if 0; # not running under some shell
+
+use strict;
+use warnings;
+use Bot::BasicBot::Pluggable;
+
+my $nick = 'deployer';
+my $server = 'irc.server.org';
+
+my $bot = Bot::BasicBot::Pluggable->new(
+    channels => ['#hackers'],
+    server   => $server,
+    port     => 6666,
+    #password => 'sekrit',
+    #ssl      => 1,
+    nick     => $nick,
+    charset  => "utf8",
+);
+
+$bot->load("Auth");
+$bot->load("Deployer");
+
+$bot->run();
+
