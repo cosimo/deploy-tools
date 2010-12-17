@@ -12,13 +12,14 @@ use LWP::UserAgent ();
 use Term::ANSIColor qw(:constants);
 use YAML ();
 
-our $VERSION = '0.04';
+our $VERSION = '0.05';
 
 # Build updates will be automatically detected
 # and broadcast on this channel
 our $BUILD_UPDATES_CHANNEL = '#build-updates';
-
+our $DEPLOYS_CHANNEL = '#deployments';
 our $HELPER_TOOLS_PATH = '.';
+our $TMP_ROOT = '/var/tmp';
 
 sub help {
     return "I keep track of deployments. Commands: projects-list, build-status <project>, latest-revision <project>";
@@ -59,6 +60,12 @@ sub said {
         return $self->tell($chan, join(', ', @projects));
     }
 
+    elsif ($body =~ m{deploy\-project \s+ (\S+) \s+ (\S+)$}ix) {
+        my $project = $1;
+        my $env = $2;
+        return $self->run_deploy($project, $env);
+    }
+
     return;
 }
 
@@ -73,6 +80,47 @@ sub project_repository_url {
     my $repo_url = $settings->{repository}->{url};
 
     return $repo_url;
+}
+
+sub run_deploy {
+    my ($self, $project, $environment) = @_;
+
+    if (! $project) {
+        return;
+    }
+
+    $environment ||= 'staging';
+
+    my $settings = $self->project_settings($project);
+    if (! $settings
+        || ! exists $settings->{deployment}
+        || ! exists $settings->{deployment}->{$environment}) {
+        return;
+    }
+
+    my $commands = $settings->{deployment}->{$environment};
+
+    if (ref $commands ne 'ARRAY' || @{ $commands } == 0) {
+        return;
+    }
+
+    # Checkout from source code repository
+    my $tstamp = time();
+    my $temp_dir = "$TMP_ROOT/$project/$project-$environment-$tstamp-$$";
+    my $vcs_url = $settings->{repository}->{url};
+
+    $commands = [
+        qq(svn export '$vcs_url' '$temp_dir'),
+        qq(cd '$temp_dir'),
+        @{ $commands }
+    ];
+
+    # Run deployment commands
+    $self->bot->forkit({
+        channel => $DEPLOYS_CHANNEL,
+        run     => $commands,
+    });
+
 }
 
 sub project_build_names {
@@ -181,7 +229,7 @@ sub build_updates {
         my $prev_status = $store->{$prj};
         if (defined $prev_status && $build_status ne $prev_status) {
             if ($build_status =~ m{incomplete}i) {
-                push @updates, [ $prj => "$prj now building..." ];
+                #push @updates, [ $prj => "$prj now building..." ];
             }
             else {
                 push @updates, [ $prj => "$prj, $build_status" ];
@@ -205,7 +253,7 @@ sub tick {
 
     for (@{ $updates }) {
         my ($prj, $build_status) = @{ $_ };
-        $self->say(
+        $self->notice(
             channel => $BUILD_UPDATES_CHANNEL,
             body => $build_status,
         );
